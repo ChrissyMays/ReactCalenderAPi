@@ -1,10 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow 
+from flask_marshmallow import Marshmallow
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://luiyivikxeauqv:f97e07f690f222324a216468ee79fa8143150aa1090a9a181011cb285992777f@ec2-18-235-114-62.compute-1.amazonaws.com:5432/d8o8a209uf96vg"
-
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
@@ -12,9 +11,9 @@ ma = Marshmallow(app)
 
 class Month(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable = False)
-    year = db.Column(db.String, nullable = False)
-    days_in_month = db.Column(db.Integer, nullable = False)
+    name = db.Column(db.String, nullable=False)
+    year = db.Column(db.String, nullable=False)
+    days_in_month = db.Column(db.Integer, nullable=False)
     days_in_previous_month = db.Column(db.Integer, nullable=False)
     start_day = db.Column(db.Integer, nullable=False)
 
@@ -25,37 +24,35 @@ class Month(db.Model):
         self.days_in_previous_month = days_in_previous_month
         self.start_day = start_day
 
-
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    day = db.Column(db.String, nullable = False)
-    month = db.Column(db.String, nullable = False)
-    year = db.Column(db.String, nullable = False)
-    text = db.Column(db.String, nullable = False)
+    day = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.String, nullable=False)
+    year = db.Column(db.String, nullable=False)
+    text = db.Column(db.String, nullable=False)
 
-def __init__(self, day, month, year, text):
-    self.day = day
-    self.month = month
-    self.year = year
-    self.text = text 
+    def __init__(self, day, month, year, text):
+        self.day = day
+        self.month = month
+        self.year = year
+        self.text = text
+
 
 class MonthSchema(ma.Schema):
     class Meta:
-        fields = ("id", "name", "year","days_in_month", "days_in previous_month", "start_days")
+        fields = ("id", "name", "year", "days_in_month", "days_in_previous_month", "start_day")
 
 month_schema = MonthSchema()
 multiple_month_schema = MonthSchema(many=True)
 
-
 class ReminderSchema(ma.Schema):
     class Meta:
-        fields = ("id", "day",  "month", "year", "text")
+        fields = ("id", "day", "month", "year", "text")
 
 reminder_schema = ReminderSchema()
-
 multiple_reminder_schema = ReminderSchema(many=True)
-month_schema = MonthSchema()
-    
+
+
 @app.route("/month/add", methods=["POST"])
 def add_month():
     post_data = request.get_json()
@@ -71,11 +68,35 @@ def add_month():
 
     return jsonify("Month added")
 
+@app.route("/month/add/multiple", methods=["POST"])
+def add_multiple_months():
+    post_data = request.get_json()
+
+    for month_data in post_data:
+        record_check = db.session.query(Month).filter(Month.name == month_data["name"]).filter(Month.year == month_data["year"]).first()
+
+        if record_check is None:
+            name = month_data["name"]
+            year = month_data["year"]
+            days_in_month = month_data["days_in_month"]
+            days_in_previous_month = month_data["days_in_previous_month"]
+            start_day = month_data["start_day"]
+
+            record = Month(name, year, days_in_month, days_in_previous_month, start_day)
+            db.session.add(record)
+            db.session.commit()
+
+    return jsonify("Months added")    
+
 @app.route("/month/get", methods=["GET"])
 def get_all_months():
     records = db.session.query(Month).all()
-    return jsonify(multiple_month_schema.dump(records)) 
-    
+    return jsonify(multiple_month_schema.dump(records))
+
+@app.route("/month/get/<year>", methods=["GET"])
+def get_months_by_year(year)
+    records=db.sessin.query(Month).filter(Month.year == year).all()
+    return jsonify(multiple_month_schema.dump(records))
 
 
 if __name__ == "__main__":
