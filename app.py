@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow 
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://zkfrmxxojtbsqi:ba584756bd4fd7a33603aaebd054d0e78a13f6f997914bb7b4c0868de366e34d@ec2-3-216-113-109.compute-1.amazonaws.com:5432/d3s3rcomnckh1t"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://luiyivikxeauqv:f97e07f690f222324a216468ee79fa8143150aa1090a9a181011cb285992777f@ec2-18-235-114-62.compute-1.amazonaws.com:5432/d8o8a209uf96vg"
 
 
 db = SQLAlchemy(app)
@@ -47,18 +47,35 @@ month_schema = MonthSchema()
 multiple_month_schema = MonthSchema(many=True)
 
 
-class ReminderScheme(ma.Schema):
+class ReminderSchema(ma.Schema):
     class Meta:
         fields = ("id", "day",  "month", "year", "text")
 
-        reminder_schema = ReminderSchema()
+reminder_schema = ReminderSchema()
 
 multiple_reminder_schema = ReminderSchema(many=True)
 month_schema = MonthSchema()
     
+@app.route("/month/add", methods=["POST"])
+def add_month():
+    post_data = request.get_json()
+    name = post_data["name"]
+    year = post_data["year"]
+    days_in_month = post_data["days_in_month"]
+    days_in_previous_month = post_data["days_in_previous_month"]
+    start_day = post_data["start_day"]
 
+    record = Month(name, year, days_in_month, days_in_previous_month, start_day)
+    db.session.add(record)
+    db.session.commit()
 
+    return jsonify("Month added")
 
+@app.route("/month/get", methods=["GET"])
+def get_all_months():
+    records = db.session.query(Month).all()
+    return jsonify(multiple_month_schema.dump(records)) 
+    
 
 
 if __name__ == "__main__":
